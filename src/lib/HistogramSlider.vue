@@ -8,7 +8,7 @@
       </defs>
     </svg>
     <div class="slider-wrapper">
-      <input type="text" :id="histogramId" :name="histogramId" value="" />
+      <input type="hidden" :id="histogramId" :name="histogramId" value="" />
     </div>
   </div>
 </template>
