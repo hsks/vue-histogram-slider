@@ -21,6 +21,7 @@ import * as d3Scale from 'd3-scale'
 import * as d3Array from 'd3-array'
 import * as d3Select from 'd3-selection'
 import * as d3Trans from 'd3-transition'
+import * as d3Brush from 'd3-brush'
 
 export default {
   name: 'HistogramSlider',
@@ -67,7 +68,7 @@ export default {
     const min = this.min || d3Array.min(this.data)
     const max = this.max || d3Array.max(this.data)
     const isTypeSingle = this.type == 'single'
-    var svg, histogram, x, y, hist, bins, colors
+    var svg, histogram, x, y, hist, bins, colors, brush
 
     this.updateBarColor = val => {
       var transition = d3Trans.transition().duration(this.transitionDuration)
@@ -97,6 +98,16 @@ export default {
       .select(`#${this.id}`)
       .attr('width', width)
       .attr('height', this.barHeight)
+      .on('dblclick', () => {
+        if (this.clip) {
+          x.domain([min, max])
+          updateHistogram([min, max])
+          const pos = { from: min, to: max }
+          this.update(pos)
+          this.$emit('finish', pos)
+          this.$emit('change', pos)
+        }
+      })
 
     hist = svg.append('g').attr('class', 'histogram')
 
@@ -191,6 +202,26 @@ export default {
         () => this.updateBarColor(this.ionRangeSlider.result),
         this.transitionDuration + 10
       )
+    }
+
+    if (this.clip) {
+      brush = d3Brush.brushX().on('end', () => {
+        var extent = d3Select.event.selection
+        if (extent) {
+          var domain = [x.invert(extent[0]), x.invert(extent[1])]
+          x.domain(domain)
+          const pos = {
+            from: Math.max(domain[0], this.ionRangeSlider.result.from),
+            to: Math.min(domain[1], this.ionRangeSlider.result.to)
+          }
+          this.$emit('finish', pos)
+          this.$emit('change', pos)
+
+          updateHistogram(domain)
+          hist.call(brush.clear)
+        }
+      })
+      hist.call(brush)
     }
 
     updateHistogram([min, max])
